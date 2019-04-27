@@ -4,6 +4,7 @@ Stupid simple script I wrote in an hour to sort my Spotify playlists the way I w
 
 ## Usage
 Install the requirements.
+
 ```pip install -r requirements.txt```
 
 Set up an app on your Spotify dev account. Save the Client ID and secret from there, and add a redirect URI in your whitelist.
