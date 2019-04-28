@@ -21,6 +21,6 @@ CLIENT_SECRET = "HUNTER2HUNTER2HUNTER2HUNTER2HUNT"
 REDIRECT_URI = "http://localhost:8000/billie_eilish_may_be_an_industry_plant_for_teen_girls_but_shes_way_better_than_cardi_b"
 ```
 
-Run `sortipy.py`. Of course it's in Python 3, get with the times boomer.
+Run `sortify.py`. Of course it's in Python 3, get with the times boomer. Although I don't see why it shouldn't work with Python 2. Again, don't know why you would.
 
 You'll get prompted for the redirect URI which you can copypasta from your browser you got redirected to. Bada bing bada boom you're done, you can now sort your Spotify playlist by time signatures, BPM and the length of the track names for all I care. :)

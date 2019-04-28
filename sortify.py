@@ -38,12 +38,12 @@ class Sortify(object):
         """Recursively sorts the playlist one attribute at a time
 
         Arguments:
-            playlist {list} -- Playlist response object
-            attrs {list} -- List of attributes to sort by. List must be
-                            mutable.
+            playlist {list(str)} -- Playlist response object
+            attrs {list(str)} -- List of attributes to sort by. List must be
+                                 mutable.
 
         Returns:
-            [list] -- Sorted playlist - who could've guessed?
+            {list(str)} -- Sorted playlist - who could've guessed?
         """
         if len(attrs):
 
@@ -61,74 +61,93 @@ class Sortify(object):
                 playlist.sort(key=lambda x: x["album"]["release_date"])
                 return self.sort_by_attributes(playlist, attrs)
 
-            else:
-                raise AttributeError("Invalid attribute provided")
+            elif attr == "track_number":
+                playlist.sort(key=lambda x: x["track_number"])
+                return self.sort_by_attributes(playlist, attrs)
+
+            raise AttributeError("Invalid attribute provided. For a customized "
+                                 "attribute, use the `custom` parameter.")
 
         return playlist
 
-    def sort_playlist(self, playlist_name, sort_by, ready, custom=None,
-                      show=False):
+    def dump(self, playlist_name, playlist_id, playlist):
+        """Dumps the track number, track name and artist in the updated playlist
+
+        Arguments:
+            playlist_name {str} -- Parameter name describes itself >:(
+            playlist_id {str} -- Parameter name describes itself >:(
+            playlist {list(obj)} -- Parameter name describes itself >:(
+        """
+        print("Playlist name: {}".format(playlist_name))
+        print("Playlist ID: {}\n".format(playlist_id))
+        print("   {:3s} {:60s} {:s}".format("", "Track", "Artist"))
+        print("   {:3s} {:60s} {:s}".format("", "-----", "------"))
+        for i, track in enumerate(playlist):
+            print(
+                "   {:3d} {:60s} {:s}".format(
+                    i + 1,
+                    track["name"],
+                    track["artists"][0]["name"]
+                )
+            )
+
+    def sort_playlist(self, playlist_names, sort_by, ready, custom=None,
+                      dump=False):
         """Sorts playlist lol
 
         Arguments:
-            playlist_name {str} -- Name of the playlist duh. Will raise an
-                                   exception if the playlist isn't associated
-                                   with the username. Which is also a good
-                                   indication the user does not own the
-                                   playlist.
-            sort_by {list} -- List of attributes to sort by. List must be
-                              mutable.
+            playlist_names {list(str)} -- Names of the playlists duh. Will
+                                          raise an exception if any playlist
+                                          isn't associated with the username.
+                                          Which is also a good indication the
+                                          user does not own the playlist.
+            sort_by {list(str)} -- List of attributes to sort by. List must be
+                                   mutable.
             ready {bool} -- Option to commit changes to the updated playlist.
             custom {func} -- Optional custom sorting key, like if you wanna
-                             sort by track name sring length or something.
-            show {bool} (default: False) -- Option to dump the reordered
-                                              playlist in a purdy format.
+                             sort by track name string length or something
+                             similarly absurd.
+            dump {bool} (default: False) -- Option to dump the reordered
+                                            playlist in a purdy format.
         """
         playlists = self.sp.user_playlists(self.user_id)
         new_playlist = []
 
         for playlist in playlists["items"]:
-            if playlist["name"] == playlist_name:
-                results = self.sp.user_playlist(
-                    self.user_id, playlist["id"], fields="tracks,next"
-                )
-                tracks = results["tracks"]
-                new_playlist.extend([i["track"] for i in tracks["items"]])
+            if playlist["name"] in playlist_names:
+
+                playlist_names.remove(playlist["name"])
+                tracks = self.sp.user_playlist(
+                    self.user_id, playlist["id"]
+                )["tracks"]
+                new_playlist.extend(i["track"] for i in tracks["items"])
 
                 while tracks["next"]:
                     tracks = self.sp.next(tracks)
-                    new_playlist.extend([i["track"] for i in tracks["items"]])
+                    new_playlist.extend(i["track"] for i in tracks["items"])
 
                 new_playlist = self.sort_by_attributes(new_playlist, sort_by)
 
                 if custom:
                     new_playlist.sort(key=custom)
 
-                if show:
-                    print("Playlist name: {}".format(playlist_name))
-                    print("Playlist ID: {}\n".format(playlist["id"]))
-                    print("   {:3s} {:60s} {:s}".format("", "Track", "Artist"))
-                    for i, item in enumerate(new_playlist):
-                        track = item
-                        print(
-                            "   {:3d} {:60s} {:s}".format(
-                                i + 1,
-                                track["name"],
-                                track["artists"][0]["name"]
-                            )
-                        )
+                if dump:
+                    self.dump(playlist["name"], playlist["id"], new_playlist)
 
                 if ready:
                     self.sp.user_playlist_replace_tracks(
-                        self.user_id,
-                        playlist["id"],
+                        self.user_id, playlist["id"],
                         [x["uri"] for x in new_playlist]
                     )
                     print("Playlist successfully updated")
-                break
 
-        if not len(new_playlist):
-            raise AttributeError("Playlist not found")
+                new_playlist = []
+
+        if len(playlist_names):
+            raise AttributeError(
+                "Some playlists were not found: {}".format(
+                    " ,".join(playlist_names))
+            )
 
 
 if __name__ == "__main__":
@@ -136,11 +155,11 @@ if __name__ == "__main__":
     obj = Sortify(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, "12164367064")
 
     # sort by album release date, artist name, track name and of course the
-    # third character of each track name lol
+    # length of the track URL lol
     obj.sort_playlist(
-        "MMXIX",
+        ["MMXIX", "Dissociation", "High Entropy"],
         sort_by=["album_release_date", "artists", "tracks"],
-        custom=lambda x: x["name"][2],
+        custom=lambda x: len(x["href"]),
         ready=False,
-        show=True
+        dump=True
     )
