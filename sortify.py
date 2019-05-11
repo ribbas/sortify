@@ -34,36 +34,37 @@ class Sortify(object):
         )
         self.sp.trace = False
 
-    def sort_by_attributes(self, playlist, attrs):
+    def sort_by_attributes(self, playlist, attrs, attr_ix):
         """Recursively sorts the playlist one attribute at a time
 
         Arguments:
-            playlist {list(str)} -- Playlist response object
-            attrs {list(str)} -- List of attributes to sort by. List must be
-                                 mutable.
+            playlist {list(str)} -- Playlist response object.
+            attrs {list(str)} -- List of attributes to sort by.
+            attr_ix {int} -- Index of the attributes to recurse with.
 
         Returns:
             {list(str)} -- Sorted playlist - who could've guessed?
         """
-        if len(attrs):
+        if attr_ix:
 
-            attr = attrs.pop()
+            attr = attrs[attr_ix - 1]
+            attr_ix -= 1
 
             if attr == "artists":
                 playlist.sort(key=lambda x: x["artists"][0]["name"].lower())
-                return self.sort_by_attributes(playlist, attrs)
+                return self.sort_by_attributes(playlist, attrs, attr_ix)
 
             elif attr == "tracks":
                 playlist.sort(key=lambda x: x["name"].lower())
-                return self.sort_by_attributes(playlist, attrs)
+                return self.sort_by_attributes(playlist, attrs, attr_ix)
 
             elif attr == "album_release_date":
                 playlist.sort(key=lambda x: x["album"]["release_date"])
-                return self.sort_by_attributes(playlist, attrs)
+                return self.sort_by_attributes(playlist, attrs, attr_ix)
 
             elif attr == "track_number":
                 playlist.sort(key=lambda x: x["track_number"])
-                return self.sort_by_attributes(playlist, attrs)
+                return self.sort_by_attributes(playlist, attrs, attr_ix)
 
             raise AttributeError("Invalid attribute provided. For a customized "
                                  "attribute, use the `custom` parameter.")
@@ -80,8 +81,8 @@ class Sortify(object):
         """
         print("Playlist name: {}".format(playlist_name))
         print("Playlist ID: {}\n".format(playlist_id))
-        print("   {:3s} {:60s} {:s}".format("", "Track", "Artist"))
-        print("   {:3s} {:60s} {:s}".format("", "-----", "------"))
+        print("{:6s} {:60s} {:s}".format("", "Track", "Artist"))
+        print("{:6s} {:60s} {:s}".format("", "-----", "------"))
         for i, track in enumerate(playlist):
             print(
                 "   {:3d} {:60s} {:s}".format(
@@ -101,8 +102,7 @@ class Sortify(object):
                                           isn't associated with the username.
                                           Which is also a good indication the
                                           user does not own the playlist.
-            sort_by {list(str)} -- List of attributes to sort by. List must be
-                                   mutable.
+            sort_by {list(str)} -- List of attributes to sort by.
             ready {bool} -- Option to commit changes to the updated playlist.
             custom {func} -- Optional custom sorting key, like if you wanna
                              sort by track name string length or something
@@ -126,7 +126,8 @@ class Sortify(object):
                     tracks = self.sp.next(tracks)
                     new_playlist.extend(i["track"] for i in tracks["items"])
 
-                new_playlist = self.sort_by_attributes(new_playlist, sort_by)
+                new_playlist = self.sort_by_attributes(new_playlist, sort_by,
+                                                       len(sort_by))
 
                 if custom:
                     new_playlist.sort(key=custom)
@@ -157,9 +158,16 @@ if __name__ == "__main__":
     # sort by album release date, artist name, track name and of course the
     # length of the track URL lol
     obj.sort_playlist(
-        ["MMXIX", "Dissociation", "High Entropy"],
-        sort_by=["album_release_date", "artists", "tracks"],
+        ["Dissociation", "High Entropy"],
+        sort_by=["tracks", "artists"],
         custom=lambda x: len(x["href"]),
+        ready=False,
+        dump=True
+    )
+
+    obj.sort_playlist(
+        ["MMXIX"],
+        sort_by=["album_release_date", "artists", "tracks"],
         ready=False,
         dump=True
     )
