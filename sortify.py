@@ -50,20 +50,28 @@ class Sortify(object):
             attr = attrs[attr_ix - 1]
             attr_ix -= 1
 
-            if attr == "artists":
+            if "artists" in attr:
                 playlist.sort(key=lambda x: x["artists"][0]["name"].lower())
+                if "reversed" in attr:
+                    playlist.reverse()
                 return self.sort_by_attributes(playlist, attrs, attr_ix)
 
-            elif attr == "tracks":
+            elif "tracks" in attr:
                 playlist.sort(key=lambda x: x["name"].lower())
+                if "reversed" in attr:
+                    playlist.reverse()
                 return self.sort_by_attributes(playlist, attrs, attr_ix)
 
-            elif attr == "album_release_date":
+            elif "album_release_date" in attr:
                 playlist.sort(key=lambda x: x["album"]["release_date"])
+                if "reversed" in attr:
+                    playlist.reverse()
                 return self.sort_by_attributes(playlist, attrs, attr_ix)
 
-            elif attr == "track_number":
+            elif "track_number" in attr:
                 playlist.sort(key=lambda x: x["track_number"])
+                if "reversed" in attr:
+                    playlist.reverse()
                 return self.sort_by_attributes(playlist, attrs, attr_ix)
 
             raise AttributeError("Invalid attribute provided. For a customized "
@@ -92,8 +100,8 @@ class Sortify(object):
                 )
             )
 
-    def sort_playlist(self, playlist_names, sort_by, ready, custom=None,
-                      dump=False):
+    def sort_playlist(self, playlist_names, sort_by, ready, reverse=False,
+                      custom=None, dump=False):
         """Sorts playlist lol
 
         Arguments:
@@ -132,6 +140,9 @@ class Sortify(object):
                 if custom:
                     new_playlist.sort(key=custom)
 
+                if reverse:
+                    new_playlist.reverse()
+
                 if dump:
                     self.dump(playlist["name"], playlist["id"], new_playlist)
 
@@ -155,19 +166,10 @@ if __name__ == "__main__":
 
     obj = Sortify(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, "12164367064")
 
-    # sort by album release date, artist name, track name and of course the
-    # length of the track URL lol
     obj.sort_playlist(
-        ["Dissociation", "High Entropy"],
-        sort_by=["tracks", "artists"],
-        custom=lambda x: len(x["href"]),
-        ready=False,
-        dump=True
-    )
-
-    obj.sort_playlist(
-        ["MMXIX"],
+        ["2019", "2019+"],
         sort_by=["album_release_date", "artists", "tracks"],
-        ready=False,
+        ready=True,
+        reverse=True,
         dump=True
     )
