@@ -147,10 +147,29 @@ class Sortify(object):
                     self.dump(playlist["name"], playlist["id"], new_playlist)
 
                 if ready:
-                    self.sp.user_playlist_replace_tracks(
-                        self.user_id, playlist["id"],
-                        [x["uri"] for x in new_playlist]
-                    )
+
+                    if len(new_playlist) > 99:
+                        max_tracks = 100
+                        new_playlist = [
+                            new_playlist[i * max_tracks:(i + 1) * max_tracks]
+                            for i in range((len(new_playlist) + max_tracks - 1) // max_tracks)
+                        ]
+                        self.sp.user_playlist_replace_tracks(
+                            self.user_id, playlist["id"],
+                            [x["uri"] for x in new_playlist[0]]
+                        )
+                        for playlist_chunk in new_playlist[1:]:
+                            self.sp.user_playlist_add_tracks(
+                                self.user_id, playlist["id"],
+                                [x["uri"] for x in playlist_chunk]
+                            )
+
+                    else:
+                        self.sp.user_playlist_replace_tracks(
+                            self.user_id, playlist["id"],
+                            [x["uri"] for x in new_playlist]
+                        )
+
                     print("Playlist successfully updated")
 
                 new_playlist = []
